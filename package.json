@@ -1,0 +1,36 @@
+{
+  "name": "@pown/travis",
+  "version": "2.0.0",
+  "description": "Pownage guaranteed",
+  "main": "lib/index.js",
+  "scripts": {
+    "travis": "POWN_ROOT=. pown-cli travis",
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pownjs/pown-travis.git"
+  },
+  "keywords": [
+    "exploit",
+    "framework"
+  ],
+  "author": "pdp <pdp@gnucitizen.org>",
+  "contributors": [],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pownjs/pown-travis/issues"
+  },
+  "homepage": "https://github.com/pownjs/pown-travis#readme",
+  "devDependencies": {
+    "@pown/cli": "^2.15.0"
+  },
+  "pown": {
+    "commands": [
+      "commands/travis.js"
+    ]
+  },
+  "dependencies": {
+    "@pown/request": "^2.7.0"
+  }
+}
