@@ -31,7 +31,7 @@ exports.yargs = {
 
         await save(path.join(ownerPrefix, 'repository-pages.json'), dumps(repositoryPages))
 
-        await Promise.all(repositoryPages.map(async({ repositories }) => {
+        await Promise.all(repositoryPages.map(async({ repositories = [] }) => {
             await Promise.all(repositories.map(async({ id: repositoryId }) => {
                 const repositoryRequestPages = await listRepositoryRequests(repositoryId)
 
@@ -39,7 +39,7 @@ exports.yargs = {
 
                 await save(path.join(repositoryPrefix, 'request-pages.json'), dumps(repositoryRequestPages))
 
-                await Promise.all(repositoryRequestPages.map(async({ requests }) => {
+                await Promise.all(repositoryRequestPages.map(async({ requests = [] }) => {
                     await Promise.all(requests.map(async({ id: requestId }) => {
                         const request = await getRepositoryRequest(repositoryId, requestId)
 
@@ -51,7 +51,7 @@ exports.yargs = {
                             await save(path.join(requestPrefix, `config-${id}.yaml`), config)
                         }))
 
-                        await Promise.all(request.builds.map(async({ jobs }) => {
+                        await Promise.all(request.builds.map(async({ jobs = [] }) => {
                             await Promise.all(jobs.map(async({ id: jobId }) => {
                                 const log = await getJobLog(jobId)
 
