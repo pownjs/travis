@@ -2,19 +2,31 @@ exports.yargs = {
     command: 'dump <owner>',
     describe: 'Dump travis repositories, requests and logs',
 
-    builder: (yargs) => {},
+    builder: (yargs) => {
+        yargs.option('concurrency', {
+            describe: 'Number of concurrent requests',
+            type: 'number',
+            default: 100,
+            alias: 'c'
+        })
+    },
 
     handler: async(argv) => {
-        const { owner } = argv
+        const { concurrency, owner } = argv
 
         const fs = require('fs')
         const path = require('path')
         const util = require('util')
-
-        const { listRepositories, listRepositoryRequests, getRepositoryRequest, getJobLog } = require('../../../lib/index')
+        const { Bar } = require('@pown/cli/lib/bar')
 
         const mkdir = util.promisify(fs.mkdir)
         const writeFile = util.promisify(fs.writeFile)
+
+        let total = 0
+
+        const bar = new Bar({ clearOnComplete: true })
+
+        bar.start(total, 0)
 
         const save = async(pathname, data) => {
             await mkdir(path.dirname(pathname), { recursive: true })
@@ -25,44 +37,66 @@ exports.yargs = {
             return JSON.stringify(object, '', '  ')
         }
 
-        const repositoryPages = await listRepositories(owner)
+        const exec = async(tasks) => {
+            total += tasks.length
+
+            bar.setTotal(total)
+
+            await Promise.all(tasks.map(async(task) => {
+                await task
+
+                bar.increment()
+            }))
+        }
+
+        const Travis = require('../../../lib/travis')
+
+        const travis = new Travis({ maxConcurrent: concurrency })
+
+        const repositoryPages = await travis.listRepositories(owner)
 
         const ownerPrefix = path.join(owner)
 
         await save(path.join(ownerPrefix, 'repository-pages.json'), dumps(repositoryPages))
 
-        await Promise.all(repositoryPages.map(async({ repositories = [] }) => {
-            await Promise.all(repositories.map(async({ id: repositoryId }) => {
-                const repositoryRequestPages = await listRepositoryRequests(repositoryId)
+        await exec(repositoryPages.map(async({ repositories = [] }) => {
+            await exec(repositories.map(async({ id: repositoryId }) => {
+                const repositoryRequestPages = await travis.listRepositoryRequests(repositoryId)
 
                 const repositoryPrefix = path.join(ownerPrefix, `${repositoryId}`)
 
                 await save(path.join(repositoryPrefix, 'request-pages.json'), dumps(repositoryRequestPages))
 
-                await Promise.all(repositoryRequestPages.map(async({ requests = [] }) => {
-                    await Promise.all(requests.map(async({ id: requestId }) => {
-                        const request = await getRepositoryRequest(repositoryId, requestId)
+                await exec(repositoryRequestPages.map(async({ requests = [] }) => {
+                    await exec(requests.map(async({ id: requestId }) => {
+                        const request = await travis.getRepositoryRequest(repositoryId, requestId)
 
                         const requestPrefix = path.join(repositoryPrefix, `${requestId}`)
 
                         await save(path.join(requestPrefix, 'request.json'), dumps(request))
 
-                        await Promise.all(request.raw_configs.map(async({ config }, id) => {
+                        await exec(request.raw_configs.map(async({ config }, id) => {
                             await save(path.join(requestPrefix, `config-${id}.yaml`), config)
                         }))
 
-                        await Promise.all(request.builds.map(async({ jobs = [] }) => {
-                            await Promise.all(jobs.map(async({ id: jobId }) => {
-                                const log = await getJobLog(jobId)
+                        await exec(request.builds.map(async({ jobs = [] }) => {
+                            if (!jobs.length) {
+                                return
+                            }
 
-                                const jobPrefix = path.join(requestPrefix, `${jobId}`)
+                            const { id: jobId } = jobs.pop()
 
-                                await save(path.join(jobPrefix, 'log.txt'), log)
-                            }))
+                            const log = await travis.getJobLog(jobId)
+
+                            const jobPrefix = path.join(requestPrefix, `${jobId}`)
+
+                            await save(path.join(jobPrefix, 'log.txt'), log)
                         }))
                     }))
                 }))
             }))
         }))
+
+        bar.stop()
     }
 }
