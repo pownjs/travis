@@ -31,6 +31,7 @@
     ]
   },
   "dependencies": {
-    "@pown/request": "^2.7.0"
+    "@pown/async": "^2.6.0",
+    "@pown/request": "^2.8.0"
   }
 }
