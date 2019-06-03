@@ -84,13 +84,13 @@ exports.yargs = {
                                 return
                             }
 
-                            const { id: jobId } = jobs.pop()
+                            for (let { id: jobId } of jobs) {
+                                const log = await travis.getJobLog(jobId)
 
-                            const log = await travis.getJobLog(jobId)
+                                const jobPrefix = requestPrefix
 
-                            const jobPrefix = path.join(requestPrefix, `${jobId}`)
-
-                            await save(path.join(jobPrefix, 'log.txt'), log)
+                                await save(path.join(jobPrefix, `${jobId}.log`), log)
+                            }
                         }))
                     }))
                 }))
