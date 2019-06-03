@@ -53,6 +53,12 @@ exports.yargs = {
 
         const travis = new Travis({ maxConcurrent: concurrency })
 
+        travis.on('log', console.log.bind(console))
+        travis.on('info', console.info.bind(console))
+        travis.on('warn', console.warn.bind(console))
+        travis.on('error', console.error.bind(console))
+        travis.on('debug', console.debug.bind(console))
+
         const repositoryPages = await travis.listRepositories(owner)
 
         const ownerPrefix = path.join(owner)
@@ -80,17 +86,13 @@ exports.yargs = {
                         }))
 
                         await exec(request.builds.map(async({ jobs = [] }) => {
-                            if (!jobs.length) {
-                                return
-                            }
-
-                            for (let { id: jobId } of jobs) {
+                            await exec(jobs.map(async({ id: jobId }) => {
                                 const log = await travis.getJobLog(jobId)
 
                                 const jobPrefix = requestPrefix
 
                                 await save(path.join(jobPrefix, `${jobId}.log`), log)
-                            }
+                            }))
                         }))
                     }))
                 }))
