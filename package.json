@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/pownjs/pown-travis#readme",
   "devDependencies": {
-    "@pown/cli": "^2.17.0"
+    "@pown/cli": "^2.20.0"
   },
   "pown": {
     "commands": [
@@ -31,7 +31,7 @@
     ]
   },
   "dependencies": {
-    "@pown/async": "^2.6.0",
-    "@pown/request": "^2.8.0"
+    "@pown/async": "^2.7.0",
+    "@pown/request": "^2.12.2"
   }
 }
